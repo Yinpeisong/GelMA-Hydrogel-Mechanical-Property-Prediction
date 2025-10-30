@@ -2,7 +2,6 @@ import torch
 import joblib
 import numpy as np
 
-# 你的模型定义
 from blitz.modules import BayesianLinear
 from blitz.utils import variational_estimator
 
