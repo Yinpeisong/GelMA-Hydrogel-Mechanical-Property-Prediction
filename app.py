@@ -32,11 +32,17 @@ st.write("输入原料参数，模拟 BNN 模型预测水凝胶性能和生物�
 # 加载模型
 @st.cache_resource
 def get_model():
-    model = load_model("ModulusOutput/bnn_trained.pth", device="cpu")
-    model.eval()
-    return model
+    # 加载回归模型（预测模量）
+    regression_model = load_model("ModulusOutput/bnn_trained.pth", device="cpu")
+    regression_model.eval()
 
-model = get_model()
+    # 加载分类模型（预测应力）
+    classification_model = load_model("models/", device="cpu")
+    classification_model.eval()
+
+    return regression_model, classification_model
+
+regression_model, classification_model = get_models()
 
 # -----------------------------
 # 输入参数区域
