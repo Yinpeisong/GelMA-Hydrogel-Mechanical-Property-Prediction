@@ -5,7 +5,7 @@ from model.model_utils import load_model, preprocess_input
 
 # 页面配置
 st.set_page_config(
-    page_title="水凝胶 BNN 预测系统",
+    page_title="水凝胶预测系统",
     page_icon="🧫",
     layout="centered"
 )
