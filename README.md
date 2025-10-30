@@ -1,1 +1,1 @@
-# GelMA-Hydrogel-Mechanical-Prediction
+# GelMA-Hydrogel-Mechanical- Property-Prediction
