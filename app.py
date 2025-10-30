@@ -37,7 +37,7 @@ def get_model():
     regression_model.eval()
 
     # 加载分类模型（预测应力）
-    classification_model = load_model("models/", device="cpu")
+    classification_model = load_model("models/bnn_model_classifier.pth", device="cpu")
     classification_model.eval()
 
     return regression_model, classification_model
@@ -62,48 +62,59 @@ if st.button("运行 BNN 预测"):
     X_input = np.array([[gelma, lap, uv_time]])
     X_tensor = preprocess_input(X_input)
 
-    # Monte Carlo Sampling
+    # -----------------------------
+    # 回归模型预测：储能模量 & 损耗模量
+    # -----------------------------
     preds = []
     with torch.no_grad():
-        for _ in range(50):
-            y_pred = model(X_tensor)
+        for _ in range(50):  # Monte Carlo 采样
+            y_pred = regression_model(X_tensor)
             preds.append(y_pred.cpu().numpy())
     preds = np.vstack(preds)
     mean_pred = preds.mean(axis=0)
     std_pred = preds.std(axis=0)
 
-    # 示例假设输出有两个：模量 & 应力
-    hydro_modulus = mean_pred[0]
-    yield_stress = mean_pred[1]
-    hydro_std = std_pred[0]
-    stress_std = std_pred[1]
+    storage_modulus = mean_pred[0]  # 储能模量 G'
+    loss_modulus = mean_pred[1]     # 损耗模量 G''
+    storage_std = std_pred[0]
+    loss_std = std_pred[1]
 
-    # 细胞铺展状态推断（示例规则）
-    if hydro_modulus < 10:
+    # -----------------------------
+    # 分类模型预测：临界应力
+    # -----------------------------
+    with torch.no_grad():
+        stress_pred = classification_model(X_tensor)
+    stress_class = torch.argmax(stress_pred, dim=1).item()
+
+    stress_labels = ['低应力', '中应力', '高应力']  # 根据训练时类别设置
+    critical_stress = stress_labels[stress_class]
+
+
+    st.markdown('<div class="card"><p class="section-title">预测结果 (Outputs)</p>', unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown('<p class="metric-label">临界应力 (应力类别)</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="metric-value">{critical_stress}</p>', unsafe_allow_html=True)
+
+    with col2:
+        st.markdown('<p class="metric-label">储能模量 G\' (kPa)</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="metric-value">{storage_modulus:.2f} ± {storage_std:.2f}</p>', unsafe_allow_html=True)
+
+    with col3:
+        st.markdown('<p class="metric-label">损耗模量 G\'\' (kPa)</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="metric-value">{loss_modulus:.2f} ± {loss_std:.2f}</p>', unsafe_allow_html=True)
+
+    st.markdown('<hr>', unsafe_allow_html=True)
+
+    # 细胞铺展状态推断（示例规则，可根据储能模量判定）
+    if storage_modulus < 10:
         cell_status = "低刚度 - 限制铺展"
-    elif 10 <= hydro_modulus <= 25:
+    elif 10 <= storage_modulus <= 25:
         cell_status = "适中刚度 - 有利铺展"
     else:
         cell_status = "高刚度 - 抑制生长"
 
-    # -----------------------------
-    # 输出结果区域
-    # -----------------------------
-    st.markdown('<div class="card"><p class="section-title">预测结果 (Outputs)</p>', unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown('<p class="metric-label">水凝胶模量 (kPa)</p>', unsafe_allow_html=True)
-        st.markdown(f'<p class="metric-value">{hydro_modulus:.2f} ± {hydro_std:.2f}</p>', unsafe_allow_html=True)
-        st.caption("BNN预测均值 ± 标准差")
-
-    with col2:
-        st.markdown('<p class="metric-label">临界应力 (kPa)</p>', unsafe_allow_html=True)
-        st.markdown(f'<p class="metric-value">{yield_stress:.2f} ± {stress_std:.2f}</p>', unsafe_allow_html=True)
-        st.caption("BNN预测均值 ± 标准差")
-
-    st.markdown('<hr>', unsafe_allow_html=True)
     st.markdown(f"**细胞铺展状态：** {cell_status}")
-
     st.markdown('</div>', unsafe_allow_html=True)
