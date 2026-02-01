@@ -18,9 +18,9 @@ This project presents two machine learning models for predicting **hydrogel mech
 - UV crosslinking time (s)
 
 ## How to Run
-conda create -n GelMA python = 3.8
-pip install -r requirements.txt
-pip install streamlit
-python BNN_MC_ANN.py
-python Strain-StressClassifier.py
-streamlit run app.py
+- conda create -n GelMA python = 3.8
+- pip install -r requirements.txt
+- pip install streamlit
+- python BNN_MC_ANN.py
+- python Strain-StressClassifier.py
+- streamlit run app.py
